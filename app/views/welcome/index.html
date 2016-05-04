@@ -1,0 +1,129 @@
+<div id="comments-app">
+  <fieldset>
+      <legend>New Comment</legend>
+    <p>
+      <label>Title</label>
+      <input type="text" v-model="title">
+    </p>
+    <p>
+      <label>Content</label>
+      <textarea v-model="content"></textarea>
+    <p>
+    <p>
+      <input type="submit" v-on:click="add">
+    </p>
+  </fieldset>
+
+  <ul>
+    <li v-for="comment in comments">
+
+      <span v-if="!(edit_comment && comment == edit_comment)">
+        <a @click="visit(comment)">{{ comment.title }}</a>
+      </span>
+      <span v-else>
+        <input type="text" v-model="edit_comment.title"
+                           @blur="done_edit(comment)"
+                           @keyup.enter="done_edit(comment)">
+      </span>
+
+      <a @click="edit(comment)">(edit)</a>
+      <a @click="remove(comment)">(remove)</a>
+      <blockquote v-if="visit_comment && comment == visit_comment">
+        {{ comment.content }}
+      </blockquote>
+    </li>
+  </ul>
+</div>
+
+<script>
+  var comments = <%= raw Comment.all.to_json %>;
+</script>
+
+<script>
+new Vue({
+  el: '#comments-app',
+  data: {
+    comments: comments,
+    title: "",
+    content: "",
+    edit_comment: null,
+    visit_comment: null
+  },
+  //ready: function(){
+  //  var that = this;
+  //  $.ajax({
+  //    url: "/comments",
+  //    dataType: "json",
+  //    success: function(comments){
+  //      that.comments = comments;
+  //    }
+  //  })
+  //},
+  methods: {
+    visit: function(comment){
+      // TODO: comments should only contain title
+      //       so this visit should fire ajax to get content
+      if ( this.visit_comment && this.visit_comment == comment ) {
+        this.visit_comment = null;
+      } else {
+        this.visit_comment = comment;
+      }
+    },
+    add: function(){
+      var that = this;
+      $.ajax({
+        url: "/comments",
+        type: "POST",
+        data: {
+          comment: {
+            title: that.title,
+            content: that.content,
+          }
+        },
+        dataType: "json",
+        success: function(data){
+          that.comments.push(data);
+          that.title = "";
+          that.content = "";
+        }
+      })
+    },
+    edit: function(comment){
+      // TODO: how to focus input?
+      this.edit_comment = comment;
+    },
+    done_edit: function(comment){
+      var that = this;
+      $.ajax({
+        url : "/comments/" + comment.id,
+        dataType: "json",
+        type: "PATCH",
+        data: {
+          comment: {
+            title: comment.title
+          }
+        },
+        success: function(data){
+          that.edit_comment = null;
+        }
+      })
+
+    },
+    remove: function(comment) {
+      var that = this;
+      $.ajax({
+        url : "/comments/" + comment.id,
+        dataType: "json",
+        type: "DELETE",
+        success: function(){
+          // TODO: better way?
+          that.comments = $.grep(that.comments, function(e){
+            return e.id != comment.id
+          });
+        }
+      })
+    }
+  }
+})
+
+</script>

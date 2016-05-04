@@ -13,4 +13,7 @@
 //= require jquery
 //= require jquery_ujs
 //= require vue
-//= require_tree .
+
+<% if Rails.env.development? %>
+  Vue.config.debug = true
+<% end %>
